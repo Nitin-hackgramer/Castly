@@ -11,5 +11,8 @@ venv/
 backend/venv/
 frontend/node_modules/
 
+# Django collected static files (generated at build time)
+backend/staticfiles/
+
 # dotenv (keep local secrets out of commits)
 .env

@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <a href="https://castly-backend-r1e0.onrender.com">Live Backend</a> |
+  <a href="https://castly-sigma.vercel.app">Live Project</a> |
   <a href="#getting-started">Getting Started</a> |
   <a href="#features">Features</a> |
   <a href="#project-structure">Project Structure</a> |

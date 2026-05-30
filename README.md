@@ -300,20 +300,3 @@ After the hackathon phase, the project was reworked so it could be used by a wid
 - organizational decision-making
 
 That evolution kept the same core idea: cryptographic trust, auditability, and tamper-resistant election flow, but made the platform more adaptable for real-world use outside the original government hackathon setting.
-
----
-
-## Roadmap
-
-- Add a polished hosted frontend URL
-- Improve documentation for each API endpoint
-- Add role-based demo accounts for local testing
-- Expand audit dashboards
-- Add more automated tests for production edge cases
-
----
-
-## License
-
-Add your preferred license here if this project will be published publicly.
-

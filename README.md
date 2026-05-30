@@ -36,7 +36,7 @@ The system was initially built as a hackathon project, and then evolved into a b
 | Environment | Link | Notes |
 | --- | --- | --- |
 | Backend API | [https://castly-backend-r1e0.onrender.com](https://castly-backend-r1e0.onrender.com) | Deployed Django backend on Render |
-| Frontend App | _Add your deployed frontend URL here_ | If hosted separately, link it here |
+| Frontend App | [https://castly-sigma.vercel.app](https://castly-sigma.vercel.app) | Deployed React frontend on Vercel |
 
 ### Common API entry points
 

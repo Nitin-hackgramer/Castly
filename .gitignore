@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# virtualenvs
+env/
+.venv/
+venv/
+backend/venv/
+frontend/node_modules/
+
+# dotenv (keep local secrets out of commits)
+.env

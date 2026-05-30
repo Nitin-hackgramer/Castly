@@ -14,7 +14,14 @@ env = environ.Env(
 )
 environ.Env.read_env(BASE_DIR / ".env")
 
-ALLOWED_HOSTS = ["localhost", "https://castly-sigma.vercel.app/"]
+# sanitize CORS origins to remove trailing slashes
+_raw_origins = env.list("CORS_ALLOWED_ORIGINS", default=["https://castly-sigma.vercel.app"])
+CORS_ALLOWED_ORIGINS = [o.rstrip("/") for o in _raw_origins]
+
+# CSRF trusted origins must include scheme + host
+CSRF_TRUSTED_ORIGINS = [o if o.startswith("http") else f"https://{o}" for o in CORS_ALLOWED_ORIGINS]
+
+ALLOWED_HOSTS = ["localhost", "castly-sigma.vercel.app", "castly-backend-r1e0.onrender.com"]
 def required_env(key: str) -> str:
     value = env(key, default="")
     if value is None or str(value).strip() == "":
@@ -106,9 +113,6 @@ if _whitenoise_available:
         idx = 0
     MIDDLEWARE.insert(idx, "whitenoise.middleware.WhiteNoiseMiddleware")
 
-CORS_ALLOWED_ORIGINS = env.list(
-    "CORS_ALLOWED_ORIGINS", default=["https://castly-sigma.vercel.app"]
-)
 
 ROOT_URLCONF = "voidx.urls"
 

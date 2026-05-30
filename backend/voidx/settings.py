@@ -107,7 +107,7 @@ if _whitenoise_available:
     MIDDLEWARE.insert(idx, "whitenoise.middleware.WhiteNoiseMiddleware")
 
 CORS_ALLOWED_ORIGINS = env.list(
-    "CORS_ALLOWED_ORIGINS", default=["http://localhost:5173", "https://castly-sigma.vercel.app/"]
+    "CORS_ALLOWED_ORIGINS", default=["https://castly-sigma.vercel.app/"]
 )
 
 ROOT_URLCONF = "voidx.urls"

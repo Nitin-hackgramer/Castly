@@ -1,9 +1,7 @@
 import axios from "axios";
 
-const BASE = import.meta.env.VITE_API_URL;
-
 const api = axios.create({
-    baseURL: BASE,
+    baseURL: "https://castly-backend-r1e0.onrender.com",
     headers: { "Content-Type": "application/json" },
 });
 

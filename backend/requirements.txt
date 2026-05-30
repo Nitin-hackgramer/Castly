@@ -9,3 +9,5 @@ python-dotenv==1.2.2
 sqlparse==0.5.5
 tzdata==2025.3
 uvicorn==0.34.0
+gunicorn==22.1.0
+whitenoise==1.4.0

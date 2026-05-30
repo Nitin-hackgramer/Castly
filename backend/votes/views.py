@@ -1,6 +1,7 @@
 import secrets
 import uuid
 from datetime import timedelta
+import logging
 from django.core.cache import cache
 from django.db import transaction
 from django.conf import settings
@@ -112,109 +113,121 @@ def election_detail(request, election_id):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def start_election(request):
-    title = request.data.get("title", "General Election").strip() or "General Election"
-    candidates = request.data.get("candidates", [])
-    ends_at_raw = request.data.get("ends_at")
-    voter_password = str(request.data.get("voter_password", "")).strip()
-    admin_password = str(request.data.get("admin_password", "")).strip()
+    logger = logging.getLogger(__name__)
+    try:
+        title = (
+            request.data.get("title", "General Election").strip() or "General Election"
+        )
+        candidates = request.data.get("candidates", [])
+        ends_at_raw = request.data.get("ends_at")
+        voter_password = str(request.data.get("voter_password", "")).strip()
+        admin_password = str(request.data.get("admin_password", "")).strip()
 
-    if not voter_password:
+        if not voter_password:
+            return Response(
+                {"error": "Voter verification password is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not admin_password:
+            return Response(
+                {"error": "Admin page password is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not isinstance(candidates, list) or len(candidates) < 2:
+            return Response(
+                {"error": "At least 2 candidates are required to start an election."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        parsed_candidates = []
+        for index, candidate in enumerate(candidates):
+            if not isinstance(candidate, dict):
+                return Response(
+                    {"error": f"Candidate #{index + 1} is invalid."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            name = str(candidate.get("name", "")).strip()
+            emoji = str(candidate.get("emoji", "")).strip()
+            if not name or not emoji:
+                return Response(
+                    {"error": f"Candidate #{index + 1} must include name and emoji."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            parsed_candidates.append(
+                {"name": name, "emoji": emoji, "display_order": index}
+            )
+
+        ends_at = None
+        if ends_at_raw:
+            ends_at = parse_datetime(str(ends_at_raw))
+            if not ends_at:
+                return Response(
+                    {"error": "Invalid ends_at datetime format."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if timezone.is_naive(ends_at):
+                ends_at = timezone.make_aware(ends_at)
+            if ends_at <= timezone.now():
+                return Response(
+                    {"error": "Election end time must be in the future."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            # Keep the election open by default for 24 hours if caller doesn't specify end time.
+            ends_at = timezone.now() + timedelta(days=1)
+
+        with transaction.atomic():
+            Election.objects.filter(is_active=True).update(is_active=False)
+            admin_token = secrets.token_urlsafe(24)
+            election = Election.objects.create(
+                title=title,
+                voter_password_hash=make_password(voter_password),
+                admin_password_hash=make_password(admin_password),
+                admin_token_hash=make_password(admin_token),
+                is_active=True,
+                starts_at=timezone.now(),
+                ends_at=ends_at,
+            )
+            ElectionCandidate.objects.bulk_create(
+                [
+                    ElectionCandidate(election=election, **candidate)
+                    for candidate in parsed_candidates
+                ]
+            )
+
         return Response(
-            {"error": "Voter verification password is required."},
-            status=status.HTTP_400_BAD_REQUEST,
+            {
+                "message": "Election started successfully",
+                "election": {
+                    "id": str(election.id),
+                    "title": election.title,
+                    "starts_at": election.starts_at,
+                    "ends_at": election.ends_at,
+                    "status": "OPEN",
+                    "candidates": [
+                        {
+                            "id": str(candidate.id),
+                            "name": candidate.name,
+                            "emoji": candidate.emoji,
+                            "display_order": candidate.display_order,
+                        }
+                        for candidate in election.candidates.order_by(
+                            "display_order", "name"
+                        )
+                    ],
+                },
+                "admin_token": admin_token,
+                "message_admin": "Save this admin token now. It will not be shown again.",
+            }
         )
-
-    if not admin_password:
+    except Exception as exc:
+        # Log full exception to server logs and return concise error to client
+        logger.exception("Error starting election")
         return Response(
-            {"error": "Admin page password is required."},
-            status=status.HTTP_400_BAD_REQUEST,
+            {"error": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
-
-    if not isinstance(candidates, list) or len(candidates) < 2:
-        return Response(
-            {"error": "At least 2 candidates are required to start an election."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    parsed_candidates = []
-    for index, candidate in enumerate(candidates):
-        if not isinstance(candidate, dict):
-            return Response(
-                {"error": f"Candidate #{index + 1} is invalid."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        name = str(candidate.get("name", "")).strip()
-        emoji = str(candidate.get("emoji", "")).strip()
-        if not name or not emoji:
-            return Response(
-                {"error": f"Candidate #{index + 1} must include name and emoji."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        parsed_candidates.append({"name": name, "emoji": emoji, "display_order": index})
-
-    ends_at = None
-    if ends_at_raw:
-        ends_at = parse_datetime(str(ends_at_raw))
-        if not ends_at:
-            return Response(
-                {"error": "Invalid ends_at datetime format."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        if timezone.is_naive(ends_at):
-            ends_at = timezone.make_aware(ends_at)
-        if ends_at <= timezone.now():
-            return Response(
-                {"error": "Election end time must be in the future."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-    else:
-        # Keep the election open by default for 24 hours if caller doesn't specify end time.
-        ends_at = timezone.now() + timedelta(days=1)
-
-    with transaction.atomic():
-        Election.objects.filter(is_active=True).update(is_active=False)
-        admin_token = secrets.token_urlsafe(24)
-        election = Election.objects.create(
-            title=title,
-            voter_password_hash=make_password(voter_password),
-            admin_password_hash=make_password(admin_password),
-            admin_token_hash=make_password(admin_token),
-            is_active=True,
-            starts_at=timezone.now(),
-            ends_at=ends_at,
-        )
-        ElectionCandidate.objects.bulk_create(
-            [
-                ElectionCandidate(election=election, **candidate)
-                for candidate in parsed_candidates
-            ]
-        )
-
-    return Response(
-        {
-            "message": "Election started successfully",
-            "election": {
-                "id": str(election.id),
-                "title": election.title,
-                "starts_at": election.starts_at,
-                "ends_at": election.ends_at,
-                "status": "OPEN",
-                "candidates": [
-                    {
-                        "id": str(candidate.id),
-                        "name": candidate.name,
-                        "emoji": candidate.emoji,
-                        "display_order": candidate.display_order,
-                    }
-                    for candidate in election.candidates.order_by(
-                        "display_order", "name"
-                    )
-                ],
-            },
-            "admin_token": admin_token,
-            "message_admin": "Save this admin token now. It will not be shown again.",
-        }
-    )
 
 
 @api_view(["POST"])

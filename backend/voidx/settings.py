@@ -14,7 +14,7 @@ env = environ.Env(
 )
 environ.Env.read_env(BASE_DIR / ".env")
 
-
+ALLOWED_HOSTS = ["localhost", "https://castly-backend-r1e0.onrender.com"]
 def required_env(key: str) -> str:
     value = env(key, default="")
     if value is None or str(value).strip() == "":

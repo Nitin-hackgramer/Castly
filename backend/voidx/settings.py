@@ -63,11 +63,7 @@ DB_NAME = env("DB_NAME", default="").strip()
 DB_USER = env("DB_USER", default="").strip()
 DB_PASSWORD = env("DB_PASSWORD", default="").strip()
 
-DEBUG = env("DEBUG")
-
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
-
-ELECTION_DEADLINE = datetime(2026, 3, 27, 18, 0)  # change to your demo date
+DEBUG = env("DEBUG") 
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -111,7 +107,7 @@ if _whitenoise_available:
     MIDDLEWARE.insert(idx, "whitenoise.middleware.WhiteNoiseMiddleware")
 
 CORS_ALLOWED_ORIGINS = env.list(
-    "CORS_ALLOWED_ORIGINS", default=["http://localhost:5173"]
+    "CORS_ALLOWED_ORIGINS", default=["http://localhost:5173", "https://castly-frontend-r1e0.onrender.com"]
 )
 
 ROOT_URLCONF = "voidx.urls"

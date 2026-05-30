@@ -14,7 +14,7 @@ env = environ.Env(
 )
 environ.Env.read_env(BASE_DIR / ".env")
 
-ALLOWED_HOSTS = ["localhost", "https://castly-backend-r1e0.onrender.com"]
+ALLOWED_HOSTS = ["localhost", "https://castly-sigma.vercel.app/"]
 def required_env(key: str) -> str:
     value = env(key, default="")
     if value is None or str(value).strip() == "":
@@ -107,7 +107,7 @@ if _whitenoise_available:
     MIDDLEWARE.insert(idx, "whitenoise.middleware.WhiteNoiseMiddleware")
 
 CORS_ALLOWED_ORIGINS = env.list(
-    "CORS_ALLOWED_ORIGINS", default=["http://localhost:5173", "https://castly-frontend-r1e0.onrender.com"]
+    "CORS_ALLOWED_ORIGINS", default=["http://localhost:5173", "https://castly-sigma.vercel.app/"]
 )
 
 ROOT_URLCONF = "voidx.urls"
